@@ -1,8 +1,22 @@
+import axios from "axios";
 import { useEffect, useRef, useState } from "react";
+import { useMutation } from "react-query";
 
 const VideoComponent = ({ callback, reference }) => {
   const videoRef = useRef(null);
   const [cameraOff, setCameraOff] = useState(false);
+  const uploadBlob = useMutation(
+    (data) =>
+      axios({
+        url: data.url,
+        method: "post",
+        data: data.blob,
+      }),
+    {
+      onSuccess(d) {},
+      onError(e) {},
+    }
+  );
   let videoRecorder = null;
 
   const toggleCameraState = () => {
@@ -14,12 +28,26 @@ const VideoComponent = ({ callback, reference }) => {
     setCameraOff(!cameraOff);
   };
 
-  const onVideoDataAvailable = (data) => {};
+  const onRecordingPause = () => {
+    videoRecorder.requestData();
+  };
+
+  const onVideoDataAvailable = (e) => {
+    const { data } = e;
+    console.log(process.env.UPLOAD_URL);
+    const formData = new FormData();
+    formData.append("video", data);
+    uploadBlob.mutate({
+      url: process.env.UPLOAD_URL,
+      blob: formData,
+    });
+  };
 
   const onStart = () => {};
 
   const stopRecording = () => {
-    videoRecorder.stop();
+    console.log("pauses");
+    videoRecorder.pause();
   };
 
   const startRecording = (time = 3000) => {
@@ -34,6 +62,7 @@ const VideoComponent = ({ callback, reference }) => {
           videoRecorder = new MediaRecorder(stream);
           videoRecorder.ondataavailable = onVideoDataAvailable;
           videoRecorder.onstart = onStart;
+          videoRecorder.onpause = onRecordingPause;
           videoRef.current.srcObject = videoRecorder.stream;
           videoRef.current.play();
         })
