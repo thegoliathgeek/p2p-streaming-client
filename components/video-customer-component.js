@@ -2,8 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import SimplePeer from 'simple-peer'
 import wrtc from 'wrtc'
 import io from 'socket.io-client'
+import { Center } from '@chakra-ui/layout'
+import { VStack } from '@chakra-ui/layout'
+import { Badge } from '@chakra-ui/layout'
+import { HStack } from '@chakra-ui/layout'
 
-const VideoCustomerComponent = () => {
+const VideoCustomerComponent = ({ roomID }) => {
   const videoRef = useRef(null)
   const adminVideoRef = useRef(null)
   const socketRef = useRef(null)
@@ -25,7 +29,7 @@ const VideoCustomerComponent = () => {
     peer.on('signal', (signal) => {
       socketRef.current.emit('send-client-signal', {
         signal,
-        roomID: 'f33ea2b0-6788-4b5c-ade5-373043aabbdb',
+        roomID,
       })
     })
 
@@ -49,7 +53,7 @@ const VideoCustomerComponent = () => {
           socketRef.current = io(process.env.SOCKET_URL)
 
           socketRef.current.emit('join-room', {
-            roomID: 'f33ea2b0-6788-4b5c-ade5-373043aabbdb',
+            roomID,
           })
 
           socketRef.current.on('joined-room', ({ sdp, roomID }) => {
@@ -68,10 +72,19 @@ const VideoCustomerComponent = () => {
     }
   }, [])
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-      <video ref={videoRef}></video>
-      <video ref={adminVideoRef}></video>
-    </div>
+    <Center>
+      <VStack spacing={8}>
+        {connectionState ? (
+          <Badge color='green'>Agent Connected</Badge>
+        ) : (
+          <Badge color='red'>Agent Not Connected</Badge>
+        )}
+        <HStack spacing={16}>
+          <video width='500px' height='500px' ref={videoRef}></video>
+          <video width='500px' height='500px' ref={adminVideoRef}></video>
+        </HStack>
+      </VStack>
+    </Center>
   )
 }
 
