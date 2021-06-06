@@ -19,8 +19,6 @@ const VideoCustomerComponent = () => {
     })
 
     peer.on('connect', () => {
-      console.log('Admin Connected')
-      alert('Admin Connected')
       setConnectionSate(true)
     })
 

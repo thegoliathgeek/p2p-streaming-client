@@ -6,6 +6,7 @@ import io from 'socket.io-client'
 const VideoAgentComponent = () => {
   const videoRef = useRef(null)
   const socketRef = useRef(null)
+  const customerVideoRef = useRef(null)
   const peerRef = useRef(null)
   const [connectionState, setConnectionSate] = useState(false)
 
@@ -19,14 +20,16 @@ const VideoAgentComponent = () => {
     })
 
     peer.on('connect', () => {
-      console.log('Client Connected')
-      alert('Client Connected')
-
       setConnectionSate(true)
     })
 
     peer.on('signal', (signal) => {
       socket.emit('send-signal', { signal }) // Sending signal to be accepted by the client peer
+    })
+
+    peer.on('stream', (stream) => {
+      customerVideoRef.current.srcObject = stream
+      customerVideoRef.current.play()
     })
 
     return peer
@@ -49,14 +52,17 @@ const VideoAgentComponent = () => {
           })
 
           videoRef.current.srcObject = stream
-          if (connectionState) peerRef.current.send('something')
-          // peerRef.current.addStream(stream)
 
           videoRef.current.play()
         })
     }
   }, [connectionState])
-  return <video ref={videoRef}></video>
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <video ref={videoRef}></video>
+      <video ref={customerVideoRef}></video>
+    </div>
+  )
 }
 
 export default VideoAgentComponent
