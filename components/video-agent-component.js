@@ -24,7 +24,11 @@ const VideoAgentComponent = () => {
     })
 
     peer.on('signal', (signal) => {
-      socket.emit('send-signal', { signal }) // Sending signal to be accepted by the client peer
+      if (signal.sdp)
+        socket.emit('send-initiator-signal', {
+          signal,
+          roomID: 'f33ea2b0-6788-4b5c-ade5-373043aabbdb',
+        })
     })
 
     peer.on('stream', (stream) => {
@@ -40,16 +44,22 @@ const VideoAgentComponent = () => {
       navigator.mediaDevices
         .getUserMedia({ audio: true, video: true })
         .then((stream) => {
+          //
           socketRef.current = io('http://localhost:9000')
-          socketRef.current.emit('join-room', 'host')
+          socketRef.current.emit('join-room', {
+            roomID: 'f33ea2b0-6788-4b5c-ade5-373043aabbdb',
+          })
 
           socketRef.current.on('joined-room', () => {
             peerRef.current = createPeer(stream)
           })
 
-          socketRef.current.on('receive-signal', ({ signal }) => {
-            peerRef.current.signal(signal)
-          })
+          socketRef.current.on(
+            'receive-initiator-signal',
+            ({ signal, roomID }) => {
+              peerRef.current.signal(signal)
+            }
+          )
 
           videoRef.current.srcObject = stream
 

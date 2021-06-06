@@ -23,7 +23,10 @@ const VideoCustomerComponent = () => {
     })
 
     peer.on('signal', (signal) => {
-      socketRef.current.emit('send-back', { signal })
+      socketRef.current.emit('send-client-signal', {
+        signal,
+        roomID: 'f33ea2b0-6788-4b5c-ade5-373043aabbdb',
+      })
     })
 
     peer.on('stream', (stream) => {
@@ -45,10 +48,13 @@ const VideoCustomerComponent = () => {
         .then((stream) => {
           socketRef.current = io('http://localhost:9000')
 
-          socketRef.current.emit('join-room', '')
+          socketRef.current.emit('join-room', {
+            roomID: 'f33ea2b0-6788-4b5c-ade5-373043aabbdb',
+          })
 
-          socketRef.current.on('joined-room', () => {
+          socketRef.current.on('joined-room', ({ sdp, roomID }) => {
             peerRef.current = createPeer(stream)
+            peerRef.current.signal(sdp)
           })
 
           socketRef.current.on('receive-signal', ({ signal }) => {
