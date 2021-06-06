@@ -46,7 +46,7 @@ const VideoCustomerComponent = () => {
       navigator.mediaDevices
         .getUserMedia({ audio: true, video: true })
         .then((stream) => {
-          socketRef.current = io('http://localhost:9000')
+          socketRef.current = io(process.env.SOCKET_URL)
 
           socketRef.current.emit('join-room', {
             roomID: 'f33ea2b0-6788-4b5c-ade5-373043aabbdb',
