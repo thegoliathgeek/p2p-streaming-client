@@ -1,14 +1,13 @@
-import { useRef } from "react";
-import VideoComponent from "../../components/video-component";
+import { useRef } from 'react'
+import VideoRecordingComponent from '../../components/video-recording-component'
 
 const StreamComponent = () => {
-  const videoRef = useRef(null);
-  console.log(process.env.UPLOAD_URL);
+  const videoRef = useRef(null)
   return (
     <div>
-      <VideoComponent />
+      <VideoRecordingComponent />
     </div>
-  );
-};
+  )
+}
 
-export default StreamComponent;
+export default StreamComponent

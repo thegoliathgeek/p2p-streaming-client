@@ -1,7 +1,7 @@
-import VideoComponent from "../../components/video-component";
+import VideoComponent from '../../components/video-agent-component'
 
 const PeerComponent = () => {
-  return <VideoComponent></VideoComponent>;
-};
+  return <VideoComponent></VideoComponent>
+}
 
-export default PeerComponent;
+export default PeerComponent
