@@ -11,8 +11,7 @@ const VideoAgentComponent = ({ roomID }) => {
   const peerRef = useRef(null)
   const [connectionState, setConnectionSate] = useState(false)
 
-  const createPeer = (stream) => {
-    const socket = socketRef.current
+  const createInitiator = (stream, participants) => {
     const peer = new SimplePeer({
       initiator: true,
       trickle: false,
@@ -25,11 +24,40 @@ const VideoAgentComponent = ({ roomID }) => {
     })
 
     peer.on('signal', (signal) => {
-      if (signal.sdp)
-        socket.emit('send-initiator-signal', {
-          signal,
-          roomID,
-        })
+      socketRef.current.emit('send-offer', {
+        signal,
+        roomID,
+        toUser: participants[0],
+      })
+    })
+
+    peer.on('stream', (stream) => {
+      customerVideoRef.current.srcObject = stream
+      customerVideoRef.current.play()
+    })
+
+    return peer
+  }
+
+  const addAnswerPeer = (stream, offer, offeredUser) => {
+    const peer = new SimplePeer({
+      initiator: false,
+      trickle: false,
+      wrtc,
+      stream,
+    })
+
+    peer.signal(offer)
+    peer.on('connect', () => {
+      setConnectionSate(true)
+    })
+
+    peer.on('signal', (signal) => {
+      socketRef.current.emit('send-answer', {
+        signal,
+        roomID,
+        offeredUser,
+      })
     })
 
     peer.on('stream', (stream) => {
@@ -45,29 +73,31 @@ const VideoAgentComponent = ({ roomID }) => {
       navigator.mediaDevices
         .getUserMedia({ audio: true, video: true })
         .then((stream) => {
-          //
           socketRef.current = io(process.env.SOCKET_URL)
+
           socketRef.current.emit('join-room', {
             roomID,
           })
 
-          socketRef.current.on('joined-room', () => {
-            peerRef.current = createPeer(stream)
+          socketRef.current.on('joined-room', ({ sdp, participants }) => {
+            peerRef.current = createInitiator(stream, participants)
           })
 
-          socketRef.current.on(
-            'receive-initiator-signal',
-            ({ signal, roomID }) => {
-              peerRef.current.signal(signal)
-            }
-          )
+          socketRef.current.on('fetch-offer', ({ signal, offeredUser }) => {
+            console.log('fetching offer')
+            peerRef.current = addAnswerPeer(stream, signal, offeredUser)
+          })
+
+          socketRef.current.on('fetch-answer', ({ signal }) => {
+            peerRef.current.signal(signal)
+          })
 
           videoRef.current.srcObject = stream
 
           videoRef.current.play()
         })
     }
-  }, [connectionState])
+  }, [])
   return (
     <Center>
       <VStack spacing={8}>

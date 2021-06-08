@@ -14,9 +14,9 @@ const VideoCustomerComponent = ({ roomID }) => {
   const peerRef = useRef(null)
   const [connectionState, setConnectionSate] = useState(false)
 
-  const createPeer = (stream) => {
+  const createInitiator = (stream, participants) => {
     const peer = new SimplePeer({
-      initiator: false,
+      initiator: true,
       trickle: false,
       wrtc,
       stream,
@@ -27,9 +27,10 @@ const VideoCustomerComponent = ({ roomID }) => {
     })
 
     peer.on('signal', (signal) => {
-      socketRef.current.emit('send-client-signal', {
+      socketRef.current.emit('send-offer', {
         signal,
         roomID,
+        toUser: participants[0],
       })
     })
 
@@ -40,6 +41,35 @@ const VideoCustomerComponent = ({ roomID }) => {
 
     peer.on('data', (stream) => {
       console.log(stream)
+    })
+
+    return peer
+  }
+
+  const addAnswerPeer = (stream, offer, offeredUser) => {
+    const peer = new SimplePeer({
+      initiator: false,
+      trickle: false,
+      wrtc,
+      stream,
+    })
+
+    peer.signal(offer)
+    peer.on('connect', () => {
+      setConnectionSate(true)
+    })
+
+    peer.on('signal', (signal) => {
+      socketRef.current.emit('send-answer', {
+        signal,
+        roomID,
+        offeredUser,
+      })
+    })
+
+    peer.on('stream', (stream) => {
+      adminVideoRef.current.srcObject = stream
+      adminVideoRef.current.play()
     })
 
     return peer
@@ -56,12 +86,16 @@ const VideoCustomerComponent = ({ roomID }) => {
             roomID,
           })
 
-          socketRef.current.on('joined-room', ({ sdp, roomID }) => {
-            peerRef.current = createPeer(stream)
-            peerRef.current.signal(sdp)
+          socketRef.current.on('joined-room', ({ sdp, participants }) => {
+            peerRef.current = createInitiator(stream, participants)
           })
 
-          socketRef.current.on('receive-signal', ({ signal }) => {
+          socketRef.current.on('fetch-offer', ({ signal, offeredUser }) => {
+            console.log('fetching offer')
+            peerRef.current = addAnswerPeer(stream, signal, offeredUser)
+          })
+
+          socketRef.current.on('fetch-answer', ({ signal }) => {
             peerRef.current.signal(signal)
           })
 
