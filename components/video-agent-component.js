@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import SimplePeer from 'simple-peer'
 import wrtc from 'wrtc'
 import io from 'socket.io-client'
-import { Badge, Center, HStack, VStack } from '@chakra-ui/react'
+import { Badge, Center, HStack, useToast, VStack } from '@chakra-ui/react'
 
 const VideoAgentComponent = ({ roomID }) => {
   const videoRef = useRef(null)
@@ -10,6 +10,8 @@ const VideoAgentComponent = ({ roomID }) => {
   const customerVideoRef = useRef(null)
   const peerRef = useRef(null)
   const [connectionState, setConnectionSate] = useState(false)
+  const [participantLeft, setParticipantLeft] = useState(false)
+  const toast = useToast()
 
   const createInitiator = (stream, participants) => {
     const peer = new SimplePeer({
@@ -90,6 +92,15 @@ const VideoAgentComponent = ({ roomID }) => {
 
           socketRef.current.on('fetch-answer', ({ signal }) => {
             peerRef.current.signal(signal)
+          })
+
+          socketRef.current.on('participant-left', () => {
+            setParticipantLeft(true)
+            toast({
+              title: 'Participant Left',
+              status: 'error',
+              duration: 2000,
+            })
           })
 
           videoRef.current.srcObject = stream
